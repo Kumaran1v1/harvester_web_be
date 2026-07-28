@@ -1,0 +1,168 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. User (Owner Details)
+model User {
+  id              Int       @id @default(autoincrement())
+  name            String
+  mobile          String    @unique
+  email           String    @unique
+  password        String
+  status          String    @default("ACTIVE")        // ACTIVE, INACTIVE, SUSPENDED
+  lastLogin       DateTime? @map("last_login")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  address         String?   @db.Text
+  companyName     String?   @map("company_name")
+  secondaryMobile String?   @map("secondary_mobile")
+  city            String?   @map("city")
+  education       String?   @map("education")
+
+  documents       OwnerDocument[]
+
+  @@map("users")
+}
+
+// 1b. Owner Documents Drive Vault
+model OwnerDocument {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  title           String
+  category        String    // RC_BOOK, INSURANCE, PERMIT, ID_PROOF, TAX, CONTRACT, OTHER
+  fileUrl         String    @map("file_url")          @db.LongText
+  fileName        String    @map("file_name")
+  fileSize        String?   @map("file_size")
+  fileType        String?   @map("file_type")
+  createdAt       DateTime  @default(now())           @map("created_at")
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("owner_documents")
+}
+
+// 2. Class Machine Bills
+model ClassBill {
+  id              Int       @id @default(autoincrement())
+  date            DateTime  @default(now())
+  place           String
+  customerName    String    @map("customer_name")
+  contactNumber   String    @map("contact_number")
+  timeHours       Decimal   @map("time_hours")        @db.Decimal(10, 2)
+  totalAmount     Decimal   @map("total_amount")      @db.Decimal(12, 2)
+  advance         Decimal   @db.Decimal(12, 2)
+  balance         Decimal   @db.Decimal(12, 2)
+  remarks         String?   @db.Text
+  status          Int       @default(0)               // 0 = PENDING, 1 = COMPLETED
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  payments        ClassBillPayment[]
+
+  @@map("class_bills")
+}
+
+model ClassBillPayment {
+  id              Int       @id @default(autoincrement())
+  billId          Int       @map("bill_id")
+  amount          Decimal   @db.Decimal(12, 2)
+  paymentDate     DateTime  @default(now()) @map("payment_date")
+  remarks         String?   @db.Text
+
+  bill            ClassBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@map("class_bill_payments")
+}
+
+// 3. Kartar Machine Bills
+model KartarBill {
+  id              Int       @id @default(autoincrement())
+  date            DateTime  @default(now())
+  place           String
+  customerName    String    @map("customer_name")
+  contactNumber   String    @map("contact_number")
+  timeHours       Decimal   @map("time_hours")        @db.Decimal(10, 2)
+  totalAmount     Decimal   @map("total_amount")      @db.Decimal(12, 2)
+  advance         Decimal   @db.Decimal(12, 2)
+  balance         Decimal   @db.Decimal(12, 2)
+  remarks         String?   @db.Text
+  status          Int       @default(0)               // 0 = PENDING, 1 = COMPLETED
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  payments        KartarBillPayment[]
+
+  @@map("kartar_bills")
+}
+
+model KartarBillPayment {
+  id              Int       @id @default(autoincrement())
+  billId          Int       @map("bill_id")
+  amount          Decimal   @db.Decimal(12, 2)
+  paymentDate     DateTime  @default(now()) @map("payment_date")
+  remarks         String?   @db.Text
+
+  bill            KartarBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@map("kartar_bill_payments")
+}
+
+
+
+// 5. Operator Records Module
+model Operator {
+  id              Int       @id @default(autoincrement())
+  operatorName    String    @map("operator_name")
+  mobile          String
+  salary          Decimal   @db.Decimal(12, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  attendances     OperatorAttendance[]
+  payments        OperatorSalaryPayment[]
+
+  @@map("operators")
+}
+
+model OperatorAttendance {
+  id              Int       @id @default(autoincrement())
+  operatorId      Int       @map("operator_id")
+  date            DateTime  @default(now())
+  status          String                              // PRESENT, ABSENT
+  dailyWage       Decimal?  @map("daily_wage")        @db.Decimal(12, 2)
+
+  operator        Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_attendances")
+}
+
+model OperatorSalaryPayment {
+  id              Int       @id @default(autoincrement())
+  operatorId      Int       @map("operator_id")
+  amount          Decimal   @db.Decimal(12, 2)
+  paymentDate     DateTime  @default(now()) @map("payment_date")
+  remarks         String?   @db.Text
+
+  operator        Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_salary_payments")
+}
+
+// 6. Bunk Details Module
+model BunkDetail {
+  id              Int       @id @default(autoincrement())
+  date            DateTime  @default(now())
+  fuelAmount      Decimal   @map("fuel_amount")       @db.Decimal(12, 2)
+  paidAmount      Decimal   @default(0)               @map("paid_amount")      @db.Decimal(12, 2)
+  balance         Decimal   @default(0)               @map("balance")          @db.Decimal(12, 2)
+  paymentStatus   String    @default("PAID")          @map("payment_status")   // PAID, PENDING
+  purchasesJson   String?   @map("purchases_json")    @db.Text                 // JSON array of itemized purchases
+  paymentsJson    String?   @map("payments_json")     @db.Text                 // JSON array of itemized payments
+  remarks         String?   @db.Text
+  createdAt       DateTime  @default(now())           @map("created_at")
+
+  @@map("bunk_details")
+}
