@@ -2,11 +2,11 @@
   "name": "harvester-management-system-backend",
   "version": "1.0.0",
   "description": "Backend API for Harvester Management System",
-  "main": "dist/index.js",
+  "main": "src/dist/index.js",
   "scripts": {
     "dev": "npx prisma db push --skip-generate && npx prisma db seed && nodemon src/index.ts",
     "build": "npx prisma generate && tsc",
-    "start": "npx prisma db push --skip-generate && node dist/index.js",
+    "start": "npx prisma db push --skip-generate && node src/dist/index.js",
     "db:reset": "npx prisma db push --force-reset --skip-generate && npx prisma db seed",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
