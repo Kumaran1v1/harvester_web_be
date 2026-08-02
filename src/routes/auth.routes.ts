@@ -197,7 +197,7 @@ router.delete("/documents/:id", authenticateJWT, async (req: AuthenticatedReques
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.ownerDocument.deleteMany({
       where: { id, userId }
     });

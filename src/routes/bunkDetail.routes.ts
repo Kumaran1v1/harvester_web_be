@@ -76,7 +76,7 @@ router.post("/bunk-details", authenticateJWT, async (req, res, next) => {
 // PUT /api/bunk-details/:id
 router.put("/bunk-details/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { date, fuelAmount, paidAmount, balance, paymentStatus, purchasesJson, paymentsJson, remarks } = req.body;
     const updated = await prisma.bunkDetail.update({
       where: { id },
@@ -100,7 +100,7 @@ router.put("/bunk-details/:id", authenticateJWT, async (req, res, next) => {
 // DELETE /api/bunk-details/:id
 router.delete("/bunk-details/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.bunkDetail.delete({
       where: { id }
     });

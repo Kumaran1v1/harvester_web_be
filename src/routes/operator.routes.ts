@@ -83,7 +83,7 @@ router.post("/operators", authenticateJWT, async (req, res, next) => {
 // DELETE /api/operators/:id
 router.delete("/operators/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.operator.delete({
       where: { id }
     });
@@ -96,7 +96,7 @@ router.delete("/operators/:id", authenticateJWT, async (req, res, next) => {
 // PATCH /api/operators/:id (Update operator name and mobile)
 router.patch("/operators/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { operatorName, mobile } = req.body;
     const updated = await prisma.operator.update({
       where: { id },
@@ -158,7 +158,7 @@ router.get("/operators/attendance", authenticateJWT, async (req, res, next) => {
 router.post("/operators/attendance", authenticateJWT, async (req, res, next) => {
   try {
     const { operatorId, date, status, dailyWage } = req.body;
-    const opId = parseInt(operatorId);
+    const opId = String(operatorId);
     const logDate = date ? new Date(date) : new Date();
 
     const startOfDay = new Date(logDate);
@@ -270,7 +270,7 @@ router.get("/operators/attendance-grid", authenticateJWT, async (req, res, next)
 // DELETE /api/operators/attendance/:id
 router.delete("/operators/attendance/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.operatorAttendance.delete({
       where: { id }
     });
@@ -287,7 +287,7 @@ router.delete("/operators/attendance/:id", authenticateJWT, async (req, res, nex
 // GET /api/operators/:id/payments (Retrieve payments history for single operator)
 router.get("/operators/:id/payments", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const payments = await prisma.operatorSalaryPayment.findMany({
       where: { operatorId: id },
       orderBy: { paymentDate: "desc" }
@@ -304,7 +304,7 @@ router.post("/operators/salary", authenticateJWT, async (req, res, next) => {
     const { operatorId, amount, paymentDate, remarks } = req.body;
     const payment = await prisma.operatorSalaryPayment.create({
       data: {
-        operatorId: parseInt(operatorId),
+        operatorId: String(operatorId),
         amount: parseFloat(amount),
         paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
         remarks
@@ -319,7 +319,7 @@ router.post("/operators/salary", authenticateJWT, async (req, res, next) => {
 // DELETE /api/operators/salary/:id
 router.delete("/operators/salary/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.operatorSalaryPayment.delete({
       where: { id }
     });

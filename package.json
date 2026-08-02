@@ -4,12 +4,13 @@
   "description": "Backend API for Harvester Management System",
   "main": "src/dist/index.js",
   "scripts": {
-    "dev": "npx prisma db push --skip-generate && npx prisma db seed && nodemon src/index.ts",
+    "dev": "node scripts/start-mongo-rs.js && npx prisma db push --skip-generate && npx prisma db seed && nodemon src/index.ts",
     "build": "npx prisma generate && tsc",
     "start": "npx prisma db push --skip-generate && node src/dist/index.js",
     "db:reset": "npx prisma db push --force-reset --skip-generate && npx prisma db seed",
+    "mongo:rs": "node scripts/start-mongo-rs.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed"
   },
@@ -23,6 +24,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.16.0",
     "socket.io": "^4.8.3",
     "zod": "^3.22.4"
   },

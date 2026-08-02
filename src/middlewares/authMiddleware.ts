@@ -6,10 +6,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_change_this_in
 export interface AuthenticatedRequest extends Request {
   io?: any;
   user?: {
-    id: number;
+    id: string;
     email: string;
     role: string;
-    ownerId?: number | null;
+    ownerId?: string | null;
   };
 }
 

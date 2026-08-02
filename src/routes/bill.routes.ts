@@ -99,7 +99,7 @@ router.post("/class-bills", authenticateJWT, async (req, res, next) => {
 // PUT /api/class-bills/:id
 router.put("/class-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { date, place, customerName, contactNumber, timeHours, totalAmount, advance, remarks, status } = req.body;
 
     if (date && isFutureDate(date)) {
@@ -161,7 +161,7 @@ router.put("/class-bills/:id", authenticateJWT, async (req, res, next) => {
 // GET /api/class-bills/:id/payments
 router.get("/class-bills/:id/payments", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const payments = await prisma.classBillPayment.findMany({
       where: { billId: id },
       orderBy: { paymentDate: "desc" }
@@ -175,7 +175,7 @@ router.get("/class-bills/:id/payments", authenticateJWT, async (req, res, next) 
 // POST /api/class-bills/:id/payments
 router.post("/class-bills/:id/payments", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { amount, remarks } = req.body;
 
     const bill = await prisma.classBill.findUnique({ where: { id } });
@@ -192,23 +192,21 @@ router.post("/class-bills/:id/payments", authenticateJWT, async (req, res, next)
     const newAdvance = Number(bill.advance) + paymentAmount;
     const newStatus = newBalance === 0 ? 1 : bill.status;
 
-    const [updatedBill] = await prisma.$transaction([
-      prisma.classBill.update({
-        where: { id },
-        data: {
-          balance: newBalance,
-          advance: newAdvance,
-          status: newStatus
-        }
-      }),
-      prisma.classBillPayment.create({
-        data: {
-          billId: id,
-          amount: paymentAmount,
-          remarks: remarks || "Partial Payment"
-        }
-      })
-    ]);
+    const updatedBill = await prisma.classBill.update({
+      where: { id },
+      data: {
+        balance: newBalance,
+        advance: newAdvance,
+        status: newStatus
+      }
+    });
+    await prisma.classBillPayment.create({
+      data: {
+        billId: id,
+        amount: paymentAmount,
+        remarks: remarks || "Partial Payment"
+      }
+    });
 
     res.status(201).json(updatedBill);
   } catch (err) {
@@ -219,8 +217,8 @@ router.post("/class-bills/:id/payments", authenticateJWT, async (req, res, next)
 // DELETE /api/class-bills/:id/payments/:paymentId
 router.delete("/class-bills/:id/payments/:paymentId", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
-    const paymentId = parseInt(req.params.paymentId);
+    const id = req.params.id;
+    const paymentId = req.params.paymentId;
 
     const payment = await prisma.classBillPayment.findFirst({
       where: { id: paymentId, billId: id }
@@ -239,19 +237,17 @@ router.delete("/class-bills/:id/payments/:paymentId", authenticateJWT, async (re
     const newAdvance = Number(bill.advance) - paymentAmount;
     const newStatus = newBalance === 0 ? 1 : 0;
 
-    const [updatedBill] = await prisma.$transaction([
-      prisma.classBill.update({
-        where: { id },
-        data: {
-          balance: newBalance,
-          advance: newAdvance,
-          status: newStatus
-        }
-      }),
-      prisma.classBillPayment.delete({
-        where: { id: paymentId }
-      })
-    ]);
+    await prisma.classBillPayment.delete({
+      where: { id: paymentId }
+    });
+    const updatedBill = await prisma.classBill.update({
+      where: { id },
+      data: {
+        balance: newBalance,
+        advance: newAdvance,
+        status: newStatus
+      }
+    });
 
     res.json(updatedBill);
   } catch (err) {
@@ -262,7 +258,7 @@ router.delete("/class-bills/:id/payments/:paymentId", authenticateJWT, async (re
 // PATCH /api/class-bills/:id/status
 router.patch("/class-bills/:id/status", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { status } = req.body;
 
     if (status !== 0 && status !== 1) {
@@ -284,7 +280,7 @@ router.patch("/class-bills/:id/status", authenticateJWT, async (req, res, next) 
 // DELETE /api/class-bills/:id
 router.delete("/class-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.classBill.delete({
       where: { id }
     });
@@ -380,7 +376,7 @@ router.post("/kartar-bills", authenticateJWT, async (req, res, next) => {
 // PUT /api/kartar-bills/:id
 router.put("/kartar-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { date, place, customerName, contactNumber, timeHours, totalAmount, advance, remarks, status } = req.body;
 
     if (date && isFutureDate(date)) {
@@ -447,7 +443,7 @@ router.get("/api/kartar-bills/:id/payments", authenticateJWT, async (req, res, n
 // GET /api/kartar-bills/:id/payments
 router.get("/kartar-bills/:id/payments", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const payments = await prisma.kartarBillPayment.findMany({
       where: { billId: id },
       orderBy: { paymentDate: "desc" }
@@ -461,7 +457,7 @@ router.get("/kartar-bills/:id/payments", authenticateJWT, async (req, res, next)
 // POST /api/kartar-bills/:id/payments
 router.post("/kartar-bills/:id/payments", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { amount, remarks } = req.body;
 
     const bill = await prisma.kartarBill.findUnique({ where: { id } });
@@ -478,23 +474,21 @@ router.post("/kartar-bills/:id/payments", authenticateJWT, async (req, res, next
     const newAdvance = Number(bill.advance) + paymentAmount;
     const newStatus = newBalance === 0 ? 1 : bill.status;
 
-    const [updatedBill] = await prisma.$transaction([
-      prisma.kartarBill.update({
-        where: { id },
-        data: {
-          balance: newBalance,
-          advance: newAdvance,
-          status: newStatus
-        }
-      }),
-      prisma.kartarBillPayment.create({
-        data: {
-          billId: id,
-          amount: paymentAmount,
-          remarks: remarks || "Partial Payment"
-        }
-      })
-    ]);
+    const updatedBill = await prisma.kartarBill.update({
+      where: { id },
+      data: {
+        balance: newBalance,
+        advance: newAdvance,
+        status: newStatus
+      }
+    });
+    await prisma.kartarBillPayment.create({
+      data: {
+        billId: id,
+        amount: paymentAmount,
+        remarks: remarks || "Partial Payment"
+      }
+    });
 
     res.status(201).json(updatedBill);
   } catch (err) {
@@ -505,8 +499,8 @@ router.post("/kartar-bills/:id/payments", authenticateJWT, async (req, res, next
 // DELETE /api/kartar-bills/:id/payments/:paymentId
 router.delete("/kartar-bills/:id/payments/:paymentId", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
-    const paymentId = parseInt(req.params.paymentId);
+    const id = req.params.id;
+    const paymentId = req.params.paymentId;
 
     const payment = await prisma.kartarBillPayment.findFirst({
       where: { id: paymentId, billId: id }
@@ -525,19 +519,17 @@ router.delete("/kartar-bills/:id/payments/:paymentId", authenticateJWT, async (r
     const newAdvance = Number(bill.advance) - paymentAmount;
     const newStatus = newBalance === 0 ? 1 : 0;
 
-    const [updatedBill] = await prisma.$transaction([
-      prisma.kartarBill.update({
-        where: { id },
-        data: {
-          balance: newBalance,
-          advance: newAdvance,
-          status: newStatus
-        }
-      }),
-      prisma.kartarBillPayment.delete({
-        where: { id: paymentId }
-      })
-    ]);
+    await prisma.kartarBillPayment.delete({
+      where: { id: paymentId }
+    });
+    const updatedBill = await prisma.kartarBill.update({
+      where: { id },
+      data: {
+        balance: newBalance,
+        advance: newAdvance,
+        status: newStatus
+      }
+    });
 
     res.json(updatedBill);
   } catch (err) {
@@ -548,7 +540,7 @@ router.delete("/kartar-bills/:id/payments/:paymentId", authenticateJWT, async (r
 // PATCH /api/kartar-bills/:id/status
 router.patch("/kartar-bills/:id/status", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { status } = req.body;
 
     if (status !== 0 && status !== 1) {
@@ -570,7 +562,7 @@ router.patch("/kartar-bills/:id/status", authenticateJWT, async (req, res, next)
 // DELETE /api/kartar-bills/:id
 router.delete("/kartar-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     await prisma.kartarBill.delete({
       where: { id }
     });

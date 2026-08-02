@@ -1,0 +1,7 @@
+node_modules/
+src/dist/
+.env
+mongo-data/
+mongo-log/
+uploads/
+*.log
