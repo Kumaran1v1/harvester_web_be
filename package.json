@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "npx prisma db push --skip-generate && npx prisma db seed && nodemon src/index.ts",
-    "build": "tsc",
-    "start": "npx prisma db push --skip-generate && npx prisma db seed && node dist/index.js",
+    "build": "npx prisma generate && tsc",
+    "start": "npx prisma db push --skip-generate && node dist/index.js",
     "db:reset": "npx prisma db push --force-reset --skip-generate && npx prisma db seed",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
