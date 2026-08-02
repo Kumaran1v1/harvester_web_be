@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/start-mongo-rs.js && npx prisma db push --skip-generate && npx prisma db seed && nodemon src/index.ts",
     "build": "npx prisma generate && tsc",
-    "start": "npx prisma db push --skip-generate && node src/dist/index.js",
+    "start": "npx prisma db push --skip-generate && npx prisma db seed && node src/dist/index.js",
     "db:reset": "npx prisma db push --force-reset --skip-generate && npx prisma db seed",
     "mongo:rs": "node scripts/start-mongo-rs.js",
     "prisma:generate": "prisma generate",

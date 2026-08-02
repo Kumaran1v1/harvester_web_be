@@ -6,20 +6,21 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding started...");
 
-  // Hash password
+  const email = "kumaran@gmail.com";
+  const password = "12345678";
   const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash("Gunal@006", saltRounds);
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-  // Seed default user: Gunal (find + update/create avoids MongoDB replica-set requirement of upsert)
+  // find + create/update avoids MongoDB replica-set requirement of upsert
   const existing = await prisma.user.findUnique({
-    where: { email: "gunal@gmail.com" },
+    where: { email },
   });
 
-  const gunalUser = existing
+  const user = existing
     ? await prisma.user.update({
-        where: { email: "gunal@gmail.com" },
+        where: { email },
         data: {
-          name: "Gunal",
+          name: "kumaran",
           mobile: "9080076414",
           password: hashedPassword,
           address: "Owner Address",
@@ -27,8 +28,8 @@ async function main() {
       })
     : await prisma.user.create({
         data: {
-          name: "Gunal",
-          email: "gunal@gmail.com",
+          name: "kumaran",
+          email,
           mobile: "9080076414",
           password: hashedPassword,
           address: "Owner Address",
@@ -36,10 +37,10 @@ async function main() {
         },
       });
 
-  console.log("User seeded successfully:", gunalUser.email);
-  console.log("Name is: Gunal");
+  console.log("User seeded successfully:", user.email);
+  console.log("Name is: kumaran");
   console.log("Mobile is: 9080076414");
-  console.log("Password is: Gunal@006");
+  console.log("Password is:", password);
   console.log("Seeding complete.");
 }
 
