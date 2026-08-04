@@ -74,7 +74,7 @@ model ClassBillPayment {
   paymentDate     DateTime  @default(now()) @map("payment_date")
   remarks         String?
 
-  bill            ClassBill @relation(fields: [billId], references: [id])
+  bill            ClassBill @relation(fields: [billId], references: [id], onDelete: Cascade)
 
   @@map("class_bill_payments")
 }
@@ -106,7 +106,7 @@ model KartarBillPayment {
   paymentDate     DateTime  @default(now()) @map("payment_date")
   remarks         String?
 
-  bill            KartarBill @relation(fields: [billId], references: [id])
+  bill            KartarBill @relation(fields: [billId], references: [id], onDelete: Cascade)
 
   @@map("kartar_bill_payments")
 }
