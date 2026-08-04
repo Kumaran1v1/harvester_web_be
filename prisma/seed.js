@@ -6,37 +6,45 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("Seeding started...");
 
-  const email = "kumaran@gmail.com";
-  const password = "12345678";
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const kumaranPassword = "Kumaran@11";
+  const hashedPassword = await bcrypt.hash(kumaranPassword, 10);
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  // Kumaran - Super Admin
+  const kumaran = await prisma.user.upsert({
+    where: { email: "kumaran@gmail.com" },
+    update: {},
+    create: {
+      name: "Kumaran",
+      email: "kumaran@gmail.com",
+      mobile: "6380251936",
+      password: hashedPassword,
+      status: "ACTIVE",
+    },
+  });
+  console.log("Kumaran seeded:", kumaran.email, "| mobile:", kumaran.mobile, "| password:", kumaranPassword);
 
-  const user = existing
-    ? await prisma.user.update({
-        where: { email },
-        data: {
-          name: "kumaran",
-          mobile: "9080076414",
-          password: hashedPassword,
-          address: "Owner Address",
-        },
-      })
-    : await prisma.user.create({
-        data: {
-          name: "kumaran",
-          email,
-          mobile: "9080076414",
-          password: hashedPassword,
-          address: "Owner Address",
-          status: "ACTIVE",
-        },
-      });
+  // Gunal - Owner (preserve existing data, only upsert if not present)
+  const gunalPassword = "Gunal@11";
+  const gunalHashed = await bcrypt.hash(gunalPassword, 10);
 
-  console.log("User seeded successfully:", user.email);
-  console.log("Name is: kumaran");
-  console.log("Mobile is: 9080076414");
-  console.log("Password is:", password);
+  const gunal = await prisma.user.upsert({
+    where: { email: "gunalgunal2710@gmail.com" },
+    update: {},
+    create: {
+      name: "Gunal",
+      email: "gunalgunal2710@gmail.com",
+      mobile: "9080076414",
+      password: gunalHashed,
+      status: "ACTIVE",
+      address: "2/6 mariyamman Kovil Street, p nathamedu, Pidagam.",
+      companyName: "GUNAL HARVESTER'S",
+      secondaryMobile: "9443289283",
+      city: "Viluppuram",
+      education: "Bsc.agri,MBA",
+    },
+  });
+  console.log("Gunal seeded:", gunal.email, "| mobile:", gunal.mobile);
+
   console.log("Seeding complete.");
 }
 

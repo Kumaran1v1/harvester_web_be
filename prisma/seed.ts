@@ -17,15 +17,7 @@ async function main() {
   });
 
   const user = existing
-    ? await prisma.user.update({
-        where: { email },
-        data: {
-          name: "kumaran",
-          mobile: "9080076414",
-          password: hashedPassword,
-          address: "Owner Address",
-        },
-      })
+    ? existing
     : await prisma.user.create({
         data: {
           name: "kumaran",

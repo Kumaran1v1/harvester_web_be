@@ -110,4 +110,86 @@ router.delete("/bunk-details/:id", authenticateJWT, async (req, res, next) => {
   }
 });
 
+// POST /api/bunk-details/bulk-payment
+router.post("/bunk-details/bulk-payment", authenticateJWT, async (req, res, next) => {
+  try {
+    const { amount, remarks } = req.body;
+    const paymentAmount = parseFloat(amount || 0);
+
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid payment amount" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Find all records with pending balance
+      const pendingRecords = await tx.bunkDetail.findMany({
+        where: {
+          balance: { gt: 0 }
+        },
+        orderBy: [
+          { date: "asc" },
+          { createdAt: "asc" }
+        ]
+      });
+
+      const updatedRecords: any[] = [];
+      let tempRemaining = paymentAmount;
+
+      for (const r of pendingRecords) {
+        if (tempRemaining <= 0) break;
+
+        const currentBalance = r.balance;
+        const paymentForThisRecord = Math.min(currentBalance, tempRemaining);
+        tempRemaining -= paymentForThisRecord;
+
+        let payments: any[] = [];
+        if (r.paymentsJson) {
+          try {
+            payments = JSON.parse(r.paymentsJson);
+          } catch (e) {
+            payments = [];
+          }
+        }
+
+        const paymentId = Math.random().toString(36).substr(2, 9);
+        const currentTimeStr = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+        payments.push({
+          id: paymentId,
+          amount: paymentForThisRecord,
+          time: currentTimeStr,
+          remarks: `Bulk Payment (FIFO) [split from ₹${paymentAmount.toLocaleString()}]${remarks ? ` - ${remarks}` : ""}`
+        });
+
+        const newPaidAmount = r.paidAmount + paymentForThisRecord;
+        const newBalance = Math.max(0, r.fuelAmount - newPaidAmount);
+        const newStatus = newBalance === 0 ? "PAID" : "PENDING";
+
+        const updated = await tx.bunkDetail.update({
+          where: { id: r.id },
+          data: {
+            paidAmount: newPaidAmount,
+            balance: newBalance,
+            paymentStatus: newStatus,
+            paymentsJson: JSON.stringify(payments),
+            remarks: r.remarks ? `${r.remarks} | Bulk Payment: ${remarks || "Lump-sum"}` : `Bulk Payment: ${remarks || "Lump-sum"}`
+          }
+        });
+        updatedRecords.push(updated);
+      }
+
+      return { updatedRecords, tempRemaining };
+    });
+
+    res.json({
+      success: true,
+      message: `Bulk payment of ₹${paymentAmount.toLocaleString()} successfully distributed.`,
+      updatedCount: result.updatedRecords.length,
+      remainingAmount: result.tempRemaining
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
