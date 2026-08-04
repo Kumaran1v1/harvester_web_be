@@ -281,9 +281,14 @@ router.patch("/class-bills/:id/status", authenticateJWT, async (req, res, next) 
 router.delete("/class-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
     const id = req.params.id;
-    await prisma.classBill.delete({
-      where: { id }
-    });
+    await prisma.$transaction([
+      prisma.classBillPayment.deleteMany({
+        where: { billId: id }
+      }),
+      prisma.classBill.delete({
+        where: { id }
+      })
+    ]);
     res.json({ success: true, message: `Bill ${id} deleted successfully` });
   } catch (err) {
     next(err);
@@ -563,9 +568,14 @@ router.patch("/kartar-bills/:id/status", authenticateJWT, async (req, res, next)
 router.delete("/kartar-bills/:id", authenticateJWT, async (req, res, next) => {
   try {
     const id = req.params.id;
-    await prisma.kartarBill.delete({
-      where: { id }
-    });
+    await prisma.$transaction([
+      prisma.kartarBillPayment.deleteMany({
+        where: { billId: id }
+      }),
+      prisma.kartarBill.delete({
+        where: { id }
+      })
+    ]);
     res.json({ success: true, message: `Bill ${id} deleted successfully` });
   } catch (err) {
     next(err);
