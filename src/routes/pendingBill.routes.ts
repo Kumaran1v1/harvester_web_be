@@ -73,8 +73,8 @@ router.get("/pending-bills", authenticateJWT, async (req, res, next) => {
       }))
     ];
 
-    // Sort by Date Descending
-    combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort by Date Ascending
+    combined.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const total = combined.length;
     const paginated = isAll ? combined : combined.slice(page * limit, (page + 1) * limit);

@@ -38,7 +38,7 @@ router.get("/class-bills", authenticateJWT, async (req, res, next) => {
     const [bills, total] = await Promise.all([
       prisma.classBill.findMany({
         where: whereClause,
-        orderBy: { date: "desc" },
+        orderBy: { date: "asc" },
         skip: page * limit,
         take: limit
       }),
@@ -320,7 +320,7 @@ router.get("/kartar-bills", authenticateJWT, async (req, res, next) => {
     const [bills, total] = await Promise.all([
       prisma.kartarBill.findMany({
         where: whereClause,
-        orderBy: { date: "desc" },
+        orderBy: { date: "asc" },
         skip: page * limit,
         take: limit
       }),
