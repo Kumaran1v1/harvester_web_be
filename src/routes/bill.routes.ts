@@ -18,30 +18,75 @@ const isFutureDate = (dateStr: string): boolean => {
 // 1. CLASS MACHINE BILLS ENDPOINTS
 // ==========================================
 
-// GET /api/class-bills
-router.get("/class-bills", authenticateJWT, async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = (req.query.search as string || "").trim();
+// Helper to build where clause with search and month filtering
+const buildBillWhereClause = (reqQuery: any) => {
+  const search = (reqQuery.search as string || "").trim();
+  const monthQuery = reqQuery.month as string;
+  const yearQuery = reqQuery.year as string;
 
-    const whereClause: any = {};
-    if (search) {
-      whereClause.OR = [
+  const conditions: any[] = [];
+
+  if (search) {
+    conditions.push({
+      OR: [
         { place: { contains: search } },
         { customerName: { contains: search } },
         { contactNumber: { contains: search } },
         { remarks: { contains: search } }
-      ];
+      ]
+    });
+  }
+
+  if (monthQuery && yearQuery && monthQuery.toLowerCase() !== "all" && monthQuery !== "0") {
+    const year = parseInt(yearQuery);
+    const month = parseInt(monthQuery) - 1; // 0-indexed
+    if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
+      // Start of month (e.g. 2026-08-01 00:00:00 UTC and Local)
+      const startDateLocal = new Date(year, month, 1, 0, 0, 0, 0);
+      const endDateLocal = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+      const startDateUTC = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      const endDateUTC = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
+      const minStart = startDateLocal < startDateUTC ? startDateLocal : startDateUTC;
+      const maxEnd = endDateLocal > endDateUTC ? endDateLocal : endDateUTC;
+
+      conditions.push({
+        OR: [
+          { date: { gte: minStart, lte: maxEnd } },
+          { createdAt: { gte: minStart, lte: maxEnd } }
+        ]
+      });
+    }
+  }
+
+  if (conditions.length === 0) return {};
+  if (conditions.length === 1) return conditions[0];
+  return { AND: conditions };
+};
+
+// GET /api/class-bills
+router.get("/class-bills", authenticateJWT, async (req, res, next) => {
+  try {
+    const limitParam = req.query.limit as string;
+    const isAll = limitParam === "all";
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(limitParam) || 10;
+
+    const whereClause = buildBillWhereClause(req.query);
+
+    const queryOptions: any = {
+      where: whereClause,
+      orderBy: { date: "asc" }
+    };
+
+    if (!isAll) {
+      queryOptions.skip = page * limit;
+      queryOptions.take = limit;
     }
 
     const [bills, total] = await Promise.all([
-      prisma.classBill.findMany({
-        where: whereClause,
-        orderBy: { date: "asc" },
-        skip: page * limit,
-        take: limit
-      }),
+      prisma.classBill.findMany(queryOptions),
       prisma.classBill.count({ where: whereClause })
     ]);
 
@@ -303,27 +348,25 @@ router.delete("/class-bills/:id", authenticateJWT, async (req, res, next) => {
 // GET /api/kartar-bills
 router.get("/kartar-bills", authenticateJWT, async (req, res, next) => {
   try {
+    const limitParam = req.query.limit as string;
+    const isAll = limitParam === "all";
     const page = parseInt(req.query.page as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const search = (req.query.search as string || "").trim();
+    const limit = parseInt(limitParam) || 10;
 
-    const whereClause: any = {};
-    if (search) {
-      whereClause.OR = [
-        { place: { contains: search } },
-        { customerName: { contains: search } },
-        { contactNumber: { contains: search } },
-        { remarks: { contains: search } }
-      ];
+    const whereClause = buildBillWhereClause(req.query);
+
+    const queryOptions: any = {
+      where: whereClause,
+      orderBy: { date: "asc" }
+    };
+
+    if (!isAll) {
+      queryOptions.skip = page * limit;
+      queryOptions.take = limit;
     }
 
     const [bills, total] = await Promise.all([
-      prisma.kartarBill.findMany({
-        where: whereClause,
-        orderBy: { date: "asc" },
-        skip: page * limit,
-        take: limit
-      }),
+      prisma.kartarBill.findMany(queryOptions),
       prisma.kartarBill.count({ where: whereClause })
     ]);
 

@@ -15,25 +15,59 @@ router.get("/pending-bills", authenticateJWT, async (req, res, next) => {
     const isAll = limitQuery === "all" || limitQuery === "-1";
     const limit = isAll ? 0 : (parseInt(limitQuery) || 10);
 
-    // Search where clauses
-    const classWhereClause: any = { status: 0 }; // 0 = PENDING
-    if (search) {
-      classWhereClause.OR = [
-        { place: { contains: search } },
-        { customerName: { contains: search } },
-        { contactNumber: { contains: search } },
-        { remarks: { contains: search } }
-      ];
+    const monthQuery = req.query.month as string;
+    const yearQuery = req.query.year as string;
+
+    let dateCondition: any = null;
+    if (monthQuery && yearQuery && monthQuery.toLowerCase() !== "all" && monthQuery !== "0") {
+      const year = parseInt(yearQuery);
+      const month = parseInt(monthQuery) - 1;
+      if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
+        const startDateLocal = new Date(year, month, 1, 0, 0, 0, 0);
+        const endDateLocal = new Date(year, month + 1, 0, 23, 59, 59, 999);
+        const startDateUTC = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+        const endDateUTC = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
+        const minStart = startDateLocal < startDateUTC ? startDateLocal : startDateUTC;
+        const maxEnd = endDateLocal > endDateUTC ? endDateLocal : endDateUTC;
+
+        dateCondition = {
+          OR: [
+            { date: { gte: minStart, lte: maxEnd } },
+            { createdAt: { gte: minStart, lte: maxEnd } }
+          ]
+        };
+      }
     }
 
+    // Search where clauses
+    const classWhereClause: any = { status: 0 }; // 0 = PENDING
     const kartarWhereClause: any = { status: 0 }; // 0 = PENDING
-    if (search) {
-      kartarWhereClause.OR = [
-        { place: { contains: search } },
-        { customerName: { contains: search } },
-        { contactNumber: { contains: search } },
-        { remarks: { contains: search } }
-      ];
+
+    if (search || dateCondition) {
+      const classConditions: any[] = [{ status: 0 }];
+      const kartarConditions: any[] = [{ status: 0 }];
+
+      if (dateCondition) {
+        classConditions.push(dateCondition);
+        kartarConditions.push(dateCondition);
+      }
+
+      if (search) {
+        const searchOR = [
+          { place: { contains: search } },
+          { customerName: { contains: search } },
+          { contactNumber: { contains: search } },
+          { remarks: { contains: search } }
+        ];
+        classConditions.push({ OR: searchOR });
+        kartarConditions.push({ OR: searchOR });
+      }
+
+      classWhereClause.AND = classConditions;
+      kartarWhereClause.AND = kartarConditions;
+      delete classWhereClause.status;
+      delete kartarWhereClause.status;
     }
 
     const [classBills, kartarBills] = await Promise.all([
