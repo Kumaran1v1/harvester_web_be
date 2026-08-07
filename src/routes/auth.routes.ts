@@ -38,7 +38,8 @@ router.post("/login", async (req, res, next) => {
         status: user.status,
         role: "ADMIN",
         address: user.address,
-        companyName: user.companyName
+        companyName: user.companyName,
+        profileImage: (user as any).profileImage || null
       }
     });
   } catch (err) {
@@ -73,7 +74,8 @@ router.get("/profile", authenticateJWT, async (req: AuthenticatedRequest, res, n
       companyName: user.companyName,
       secondaryMobile: user.secondaryMobile,
       city: user.city,
-      education: user.education
+      education: user.education,
+      profileImage: (user as any).profileImage || null
     });
   } catch (err) {
     next(err);
@@ -90,7 +92,7 @@ router.put("/profile", authenticateJWT, async (req: AuthenticatedRequest, res, n
 
     const {
       name, mobile, email, address,
-      companyName, secondaryMobile, city, education
+      companyName, secondaryMobile, city, education, profileImage
     } = req.body;
 
     // Check for email/mobile uniqueness if changed
@@ -111,18 +113,24 @@ router.put("/profile", authenticateJWT, async (req: AuthenticatedRequest, res, n
       }
     }
 
+    const updateData: any = {
+      name,
+      mobile,
+      email,
+      address,
+      companyName,
+      secondaryMobile,
+      city,
+      education
+    };
+
+    if (profileImage !== undefined) {
+      updateData.profileImage = profileImage;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        name,
-        mobile,
-        email,
-        address,
-        companyName,
-        secondaryMobile,
-        city,
-        education
-      }
+      data: updateData
     });
 
     res.json({
@@ -138,7 +146,8 @@ router.put("/profile", authenticateJWT, async (req: AuthenticatedRequest, res, n
         companyName: updatedUser.companyName,
         secondaryMobile: updatedUser.secondaryMobile,
         city: updatedUser.city,
-        education: updatedUser.education
+        education: updatedUser.education,
+        profileImage: (updatedUser as any).profileImage || null
       }
     });
   } catch (err) {

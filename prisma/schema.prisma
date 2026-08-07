@@ -24,6 +24,7 @@ model User {
   secondaryMobile String?   @map("secondary_mobile")
   city            String?   @map("city")
   education       String?   @map("education")
+  profileImage    String?   @map("profile_image")
 
   documents       OwnerDocument[]
 
