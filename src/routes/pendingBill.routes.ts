@@ -32,10 +32,7 @@ router.get("/pending-bills", authenticateJWT, async (req, res, next) => {
         const maxEnd = endDateLocal > endDateUTC ? endDateLocal : endDateUTC;
 
         dateCondition = {
-          OR: [
-            { date: { gte: minStart, lte: maxEnd } },
-            { createdAt: { gte: minStart, lte: maxEnd } }
-          ]
+          date: { gte: minStart, lte: maxEnd }
         };
       }
     }

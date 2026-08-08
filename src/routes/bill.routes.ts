@@ -52,10 +52,7 @@ const buildBillWhereClause = (reqQuery: any) => {
       const maxEnd = endDateLocal > endDateUTC ? endDateLocal : endDateUTC;
 
       conditions.push({
-        OR: [
-          { date: { gte: minStart, lte: maxEnd } },
-          { createdAt: { gte: minStart, lte: maxEnd } }
-        ]
+        date: { gte: minStart, lte: maxEnd }
       });
     }
   }
