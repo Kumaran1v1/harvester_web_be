@@ -11,8 +11,8 @@ router.get("/operators", authenticateJWT, async (req, res, next) => {
     const whereClause: any = {};
     if (search) {
       whereClause.OR = [
-        { operatorName: { contains: search } },
-        { mobile: { contains: search } }
+        { operatorName: { contains: search, mode: "insensitive" } },
+        { mobile: { contains: search, mode: "insensitive" } }
       ];
     }
 
@@ -125,12 +125,12 @@ router.get("/operators/attendance", authenticateJWT, async (req, res, next) => {
     const whereClause: any = {};
     if (search) {
       whereClause.OR = [
-        { status: { contains: search } },
+        { status: { contains: search, mode: "insensitive" } },
         {
           operator: {
             OR: [
-              { operatorName: { contains: search } },
-              { mobile: { contains: search } }
+              { operatorName: { contains: search, mode: "insensitive" } },
+              { mobile: { contains: search, mode: "insensitive" } }
             ]
           }
         }

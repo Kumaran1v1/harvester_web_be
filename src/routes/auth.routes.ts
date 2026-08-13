@@ -9,10 +9,14 @@ const router = Router();
 
 router.post("/login", async (req, res, next) => {
   try {
-    const { identifier, password } = req.body; // identifier can be email or mobile
+    const { identifier, email, mobile, username, password } = req.body || {};
+    const loginId = (identifier || email || mobile || username || "").toString().trim();
+    if (!loginId || !password) {
+      return res.status(400).json({ message: "Email/Mobile and password are required" });
+    }
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ email: identifier }, { mobile: identifier }]
+        OR: [{ email: loginId }, { mobile: loginId }]
       }
     });
     if (!user) {

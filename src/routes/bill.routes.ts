@@ -29,10 +29,10 @@ const buildBillWhereClause = (reqQuery: any) => {
   if (search) {
     conditions.push({
       OR: [
-        { place: { contains: search } },
-        { customerName: { contains: search } },
-        { contactNumber: { contains: search } },
-        { remarks: { contains: search } }
+        { place: { contains: search, mode: "insensitive" } },
+        { customerName: { contains: search, mode: "insensitive" } },
+        { contactNumber: { contains: search, mode: "insensitive" } },
+        { remarks: { contains: search, mode: "insensitive" } }
       ]
     });
   }
