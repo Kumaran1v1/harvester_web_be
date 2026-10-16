@@ -5,6 +5,7 @@ import billRoutes from "./bill.routes";
 import pendingBillRoutes from "./pendingBill.routes";
 import operatorRoutes from "./operator.routes";
 import bunkDetailRoutes from "./bunkDetail.routes";
+import deviceRoutes from "./device.routes";
 import { authenticateJWT } from "../middlewares/authMiddleware";
 
 const router = Router();
@@ -14,6 +15,7 @@ router.get("/health", (req, res) => {
 });
 
 router.use("/auth", authRoutes);
+router.use("/device", deviceRoutes);
 router.use("/", authenticateJWT, dashboardRoutes);
 router.use("/", authenticateJWT, billRoutes);
 router.use("/", authenticateJWT, pendingBillRoutes);
@@ -21,3 +23,4 @@ router.use("/", authenticateJWT, operatorRoutes);
 router.use("/", authenticateJWT, bunkDetailRoutes);
 
 export default router;
+

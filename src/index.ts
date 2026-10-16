@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import apiRoutes from "./routes";
+import { startNotificationScheduler } from "./services/scheduler.service";
 
 // Load environment variables
 dotenv.config();
@@ -77,4 +78,6 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start Server
 httpServer.listen(PORT, () => {
   console.log(`Server is running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
+  startNotificationScheduler();
 });
+

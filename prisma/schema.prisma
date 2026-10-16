@@ -165,3 +165,48 @@ model BunkDetail {
 
   @@map("bunk_details")
 }
+
+// 7. Push Notifications Models
+model UserDevice {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @map("user_id") @db.ObjectId
+  deviceId    String   @map("device_id")
+  fcmToken    String   @map("fcm_token")
+  platform    String   @default("android")
+  isActive    Boolean  @default(true) @map("is_active")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, deviceId])
+  @@map("user_devices")
+}
+
+model NotificationMaster {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  code         String   @unique
+  title        String
+  message      String
+  targetTime   String   @map("target_time") // e.g. "06:00", "09:00", "11:00", "13:00", "17:00", "18:00", "20:30", "21:00"
+  category     String   // "GREETING", "HEALTHY_HABIT", "ACTION_REQUIRED"
+  targetScreen String   @default("DashboardTab") @map("target_screen")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_master")
+}
+
+model NotificationLog {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String?  @map("user_id") @db.ObjectId
+  operatorId       String?  @map("operator_id") @db.ObjectId
+  notificationCode String   @map("notification_code")
+  notificationDate String   @map("notification_date") // "YYYY-MM-DD" in Asia/Kolkata
+  status           String   @default("SENT")          // "SENT", "FAILED"
+  sentAt           DateTime @default(now())           @map("sent_at")
+
+  @@unique([userId, notificationCode, notificationDate])
+  @@map("notification_logs")
+}
+

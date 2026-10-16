@@ -5,3 +5,5 @@ mongo-data/
 mongo-log/
 uploads/
 *.log
+firebase-service-account.json
+
