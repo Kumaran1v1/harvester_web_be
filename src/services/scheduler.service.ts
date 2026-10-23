@@ -128,11 +128,19 @@ export async function checkAndDispatchScheduledNotifications(forcedTime?: string
   results: any[];
 }> {
   const { currentTime, currentDate } = getKolkataTimeAndDate();
-  const timeToCheck = forcedTime ? forcedTime : currentTime;
+  const timeToCheck = (forcedTime ? forcedTime : currentTime).trim();
+
+  // Support both "06:00" and "6:00" formats seamlessly
+  const timeVariations = [timeToCheck];
+  if (timeToCheck.startsWith("0")) {
+    timeVariations.push(timeToCheck.substring(1));
+  } else if (timeToCheck.length === 4 && timeToCheck.includes(":")) {
+    timeVariations.push(`0${timeToCheck}`);
+  }
 
   const pendingSchedules = await prisma.notificationMaster.findMany({
     where: {
-      targetTime: timeToCheck,
+      targetTime: { in: timeVariations },
       isActive: true,
     },
   });
