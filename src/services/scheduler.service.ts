@@ -69,7 +69,7 @@ export const defaultNotificationSchedules = [
   },
 ];
 
-/**
+/** 
  * Helper to get current time and date in Asia/Kolkata
  */
 export function getKolkataTimeAndDate(): { currentTime: string; currentDate: string } {
@@ -120,6 +120,75 @@ export async function seedNotificationMaster() {
 }
 
 /**
+ * Check and dispatch any notifications scheduled for the given (or current) time
+ */
+export async function checkAndDispatchScheduledNotifications(forcedTime?: string): Promise<{
+  triggeredTime: string;
+  foundCount: number;
+  results: any[];
+}> {
+  const { currentTime, currentDate } = getKolkataTimeAndDate();
+  const timeToCheck = forcedTime ? forcedTime : currentTime;
+
+  const pendingSchedules = await prisma.notificationMaster.findMany({
+    where: {
+      targetTime: timeToCheck,
+      isActive: true,
+    },
+  });
+
+  console.log(`[Scheduler] ${timeToCheck} IST (Date: ${currentDate}): Checking schedules. Found: ${pendingSchedules.length}`);
+
+  const results: any[] = [];
+  for (const schedule of pendingSchedules) {
+    if (schedule.code === "ATTENDANCE_REMINDER") {
+      const res = await handleAttendanceReminder(schedule, currentDate);
+      results.push({ code: schedule.code, result: res });
+    } else {
+      const res = await handleGeneralScheduledNotification(schedule, currentDate);
+      results.push({ code: schedule.code, result: res });
+    }
+  }
+
+  return {
+    triggeredTime: timeToCheck,
+    foundCount: pendingSchedules.length,
+    results,
+  };
+}
+
+/**
+ * Manually trigger a specific schedule immediately (e.g. for testing)
+ */
+export async function triggerSingleSchedule(code: string, force: boolean = true): Promise<{
+  success: boolean;
+  message: string;
+  schedule?: any;
+}> {
+  const schedule = await prisma.notificationMaster.findUnique({
+    where: { code },
+  });
+
+  if (!schedule) {
+    return { success: false, message: `Schedule with code '${code}' not found.` };
+  }
+
+  const { currentDate } = getKolkataTimeAndDate();
+
+  if (schedule.code === "ATTENDANCE_REMINDER") {
+    await handleAttendanceReminder(schedule, currentDate, force);
+  } else {
+    await handleGeneralScheduledNotification(schedule, currentDate, force);
+  }
+
+  return {
+    success: true,
+    message: `Scheduled notification '${code}' triggered successfully.`,
+    schedule,
+  };
+}
+
+/**
  * Start the minute-by-minute notification scheduler in Asia/Kolkata
  */
 export function startNotificationScheduler() {
@@ -131,31 +200,7 @@ export function startNotificationScheduler() {
     "* * * * *",
     async () => {
       try {
-        const { currentTime, currentDate } = getKolkataTimeAndDate();
-
-        // 1. Check if any notification is scheduled for this minute
-        const pendingSchedules = await prisma.notificationMaster.findMany({
-          where: {
-            targetTime: currentTime,
-            isActive: true,
-          },
-        });
-
-        if (!pendingSchedules.length) {
-          return;
-        }
-
-        console.log(`[Scheduler] ${currentTime} IST: Triggering ${pendingSchedules.length} scheduled notification(s)`);
-
-        for (const schedule of pendingSchedules) {
-          if (schedule.code === "ATTENDANCE_REMINDER") {
-            // Conditional: check operators who haven't marked attendance today
-            await handleAttendanceReminder(schedule, currentDate);
-          } else {
-            // General: broadcast to all active users with active devices
-            await handleGeneralScheduledNotification(schedule, currentDate);
-          }
-        }
+        await checkAndDispatchScheduledNotifications();
       } catch (error) {
         console.error("[Scheduler] Error running notification cron:", error);
       }
@@ -171,7 +216,7 @@ export function startNotificationScheduler() {
 /**
  * Handle 6:00 PM (or configured time) conditional attendance reminder
  */
-async function handleAttendanceReminder(schedule: any, currentDate: string) {
+export async function handleAttendanceReminder(schedule: any, currentDate: string, force: boolean = false) {
   // 1. Get today's start and end date in UTC corresponding to IST today
   const startOfDay = new Date(`${currentDate}T00:00:00.000+05:30`);
   const endOfDay = new Date(`${currentDate}T23:59:59.999+05:30`);
@@ -199,37 +244,41 @@ async function handleAttendanceReminder(schedule: any, currentDate: string) {
     `[Scheduler] Attendance check: ${missingAttendanceOperators.length} of ${allOperators.length} operators have not marked attendance today.`
   );
 
-  if (!missingAttendanceOperators.length) {
-    return;
+  if (!missingAttendanceOperators.length && !force) {
+    return { skipped: true, reason: "All operators marked attendance" };
   }
 
   // 4. Send reminder to operators (or users managing them)
-  // Check users who have devices
   const usersWithDevices = await prisma.userDevice.findMany({
     where: { isActive: true },
     select: { userId: true },
     distinct: ["userId"],
   });
 
+  let sentCount = 0;
   for (const { userId } of usersWithDevices) {
-    await NotificationService.sendNotificationWithLog({
+    const sent = await NotificationService.sendNotificationWithLog({
       userId,
       notificationCode: schedule.code,
       notificationDate: currentDate,
       title: schedule.title,
       body: schedule.message,
+      force,
       data: {
         type: schedule.code,
         screen: schedule.targetScreen || "OperatorsTab",
       },
     });
+    if (sent) sentCount++;
   }
+
+  return { totalUsers: usersWithDevices.length, sentCount };
 }
 
 /**
  * Handle general scheduled notification (Good Morning, Snacks, Lunch, Dinner, Good Night)
  */
-async function handleGeneralScheduledNotification(schedule: any, currentDate: string) {
+export async function handleGeneralScheduledNotification(schedule: any, currentDate: string, force: boolean = false) {
   // Find all active users with registered devices
   const usersWithDevices = await prisma.userDevice.findMany({
     where: { isActive: true },
@@ -237,17 +286,22 @@ async function handleGeneralScheduledNotification(schedule: any, currentDate: st
     distinct: ["userId"],
   });
 
+  let sentCount = 0;
   for (const { userId } of usersWithDevices) {
-    await NotificationService.sendNotificationWithLog({
+    const sent = await NotificationService.sendNotificationWithLog({
       userId,
       notificationCode: schedule.code,
       notificationDate: currentDate,
       title: schedule.title,
       body: schedule.message,
+      force,
       data: {
         type: schedule.code,
         screen: schedule.targetScreen || "DashboardTab",
       },
     });
+    if (sent) sentCount++;
   }
+
+  return { totalUsers: usersWithDevices.length, sentCount };
 }

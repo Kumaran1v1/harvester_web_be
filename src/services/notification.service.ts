@@ -44,6 +44,14 @@ export class NotificationService {
             body: payload.body,
           },
           data: payload.data || {},
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "harvester_notifications",
+              sound: "default",
+              priority: "high",
+            },
+          },
         });
         sent++;
       } catch (error: any) {
@@ -78,31 +86,45 @@ export class NotificationService {
     title: string;
     body: string;
     data?: Record<string, string>;
+    force?: boolean;
   }): Promise<boolean> {
-    const { userId, notificationCode, notificationDate, title, body, data } = params;
+    const { userId, notificationCode, notificationDate, title, body, data, force } = params;
 
-    // Check deduplication
-    const existingLog = await prisma.notificationLog.findFirst({
-      where: {
-        userId,
-        notificationCode,
-        notificationDate,
-      },
-    });
+    if (!force) {
+      // Check deduplication
+      const existingLog = await prisma.notificationLog.findFirst({
+        where: {
+          userId,
+          notificationCode,
+          notificationDate,
+        },
+      });
 
-    if (existingLog) {
-      // Already sent today
-      return false;
+      if (existingLog) {
+        // Already sent today
+        return false;
+      }
     }
 
     // Send push
     const result = await this.sendToUser(userId, { title, body, data });
     const status = result.sent > 0 ? "SENT" : result.failed > 0 ? "FAILED" : "NO_DEVICE";
 
-    // Record log
+    // Record or update log
     try {
-      await prisma.notificationLog.create({
-        data: {
+      await prisma.notificationLog.upsert({
+        where: {
+          userId_notificationCode_notificationDate: {
+            userId,
+            notificationCode,
+            notificationDate,
+          },
+        },
+        update: {
+          status,
+          sentAt: new Date(),
+        },
+        create: {
           userId,
           notificationCode,
           notificationDate,
